@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="styles.css">
+    <title>TensorFlow.js Image Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.12.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.0.4/dist/mobilenet.min.js"></script>
+  </head>
+  <body>
+    <h1>TensorFlow.js Image Analysis</h1>
+    <form>
+      <input type="file" id="image-selector" accept=".jpg, .jpeg, .png">
+    </form>
+    <br>
+    <div>
+      <canvas id="image-canvas"></canvas>
+      <h1>RESULTS</h1>
+      <div id="prediction-list"></div>
+      
+    </div>
+    
+    <script>
+      (async function() {
+        const imageSelector = document.getElementById('image-selector');
+        const imageCanvas = document.getElementById('image-canvas');
+        const predictionList = document.getElementById('prediction-list');
+        const model = await mobilenet.load();
+
+        imageSelector.addEventListener('change', async () => {
+          const image = await loadImage(imageSelector.files[0]);
+          const predictions = await predictImage(image);
+
+          drawImage(image, imageCanvas);
+          displayPredictions(predictions, predictionList);
+        });
+
+        async function loadImage(file) {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+              const image = new Image();
+
+              image.onload = () => resolve(image);
+              image.onerror = reject;
+              image.src = event.target.result;
+            };
+
+            reader.readAsDataURL(file);
+          });
+        }
+
+        async function predictImage(image) {
+          const prediction = await model.classify(image);
+
+          return prediction;
+        }
+
+        function drawImage(image, canvas) {
+          const context = canvas.getContext('2d');
+
+          canvas.width = image.width;
+          canvas.height = image.height;
+
+          context.drawImage(image, 0, 0, image.width, image.height);
+        }
+
+        function displayPredictions(predictions, list) {
+          list.innerHTML = '';
+
+          for (const prediction of predictions) {
+            const item = document.createElement('div');
+
+            item.innerText = `${prediction.className}: ${prediction.probability.toFixed(4)}`;
+            list.appendChild(item);
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
